@@ -6,7 +6,7 @@ app = Flask(__name__)
 def home():
     return jsonify({
         "message": "Welcome to my Flask API!",
-        "student": "YOUR FULL NAME"
+        "student": "SHERENE BRITOS"
     })
 
 @app.route("/about")
@@ -24,4 +24,5 @@ def hello(name):
     })
 
 if __name__ == "__main__":
+
     app.run(debug=True)
