@@ -1,79 +1,143 @@
-from flask import Flask, jsonify
+from flask import Flask, request, redirect
 
 app = Flask(__name__)
 
-# Homepage with simple UI
+students = {}
+
 @app.route("/")
 def home():
-    return """
+
+    rows = ""
+    for sid, data in students.items():
+        rows += f"""
+        <tr>
+            <td>{sid}</td>
+            <td>{data['name']}</td>
+            <td>{data['course']}</td>
+            <td>
+                <a class="edit" href="/edit/{sid}">Edit</a>
+                <a class="delete" href="/delete/{sid}">Delete</a>
+            </td>
+        </tr>
+        """
+
+    return f"""
     <html>
     <head>
-        <title>Flask API Project</title>
-        <style>
-            body{
-                font-family: Arial, sans-serif;
-                background: linear-gradient(to right,#4facfe,#00f2fe);
-                text-align:center;
-                padding:50px;
-            }
+    <title>Student Dashboard</title>
 
-            .card{
-                background:white;
-                width:420px;
-                margin:auto;
-                padding:30px;
-                border-radius:10px;
-                box-shadow:0px 5px 15px rgba(0,0,0,0.2);
-            }
+    <style>
 
-            h1{
-                color:#333;
-            }
+    body{{
+        font-family:Arial;
+        background:linear-gradient(120deg,#4facfe,#00f2fe);
+        text-align:center;
+        padding:40px;
+    }}
 
-            p{
-                color:#555;
-            }
+    .container{{
+        background:white;
+        padding:30px;
+        width:750px;
+        margin:auto;
+        border-radius:10px;
+        box-shadow:0 8px 20px rgba(0,0,0,0.2);
+    }}
 
-            a{
-                display:block;
-                margin:10px;
-                padding:12px;
-                text-decoration:none;
-                background:#007BFF;
-                color:white;
-                border-radius:5px;
-                font-weight:bold;
-            }
+    h1{{color:#333;}}
 
-            a:hover{
-                background:#0056b3;
-            }
+    input{{
+        padding:10px;
+        margin:5px;
+        border:1px solid #ccc;
+        border-radius:5px;
+    }}
 
-            footer{
-                margin-top:20px;
-                color:#777;
-            }
-        </style>
+    button{{
+        padding:10px 15px;
+        border:none;
+        background:#007BFF;
+        color:white;
+        border-radius:5px;
+        cursor:pointer;
+    }}
+
+    button:hover{{
+        background:#0056b3;
+    }}
+
+    table{{
+        width:100%;
+        border-collapse:collapse;
+        margin-top:20px;
+    }}
+
+    th,td{{
+        border:1px solid #ddd;
+        padding:10px;
+    }}
+
+    th{{
+        background:#007BFF;
+        color:white;
+    }}
+
+    .edit{{
+        color:green;
+        margin-right:10px;
+        text-decoration:none;
+        font-weight:bold;
+    }}
+
+    .delete{{
+        color:red;
+        text-decoration:none;
+        font-weight:bold;
+    }}
+
+    </style>
     </head>
 
     <body>
 
-    <div class="card">
+    <div class="container">
 
-        <h1>My Flask API</h1>
+    <h1>Student Manager Dashboard</h1>
+    <p><b>Developer:</b> Sherene Britos</p>
 
-        <p><strong>Developer:</strong> Sherene Britos</p>
+    <h3>Add / Update Student</h3>
 
-        <p>Welcome to my Flask API Deployment Activity</p>
+    <form action="/add" method="post">
 
-        <a href="/api">View API Welcome</a>
-        <a href="/about">About Project</a>
-        <a href="/hello/Guest">Test Hello Endpoint</a>
-        <a href="/student">Student Info</a>
+    <input name="id" placeholder="Student ID" required>
+    <input name="name" placeholder="Student Name" required>
+    <input name="course" placeholder="Course" required>
 
-        <footer>
-        <p>Running on Render</p>
-        </footer>
+    <button type="submit">Save</button>
+
+    </form>
+
+    <h3>Search Student</h3>
+
+    <form action="/search" method="get">
+
+    <input name="name" placeholder="Enter name">
+    <button type="submit">Search</button>
+
+    </form>
+
+    <table>
+
+    <tr>
+    <th>ID</th>
+    <th>Name</th>
+    <th>Course</th>
+    <th>Actions</th>
+    </tr>
+
+    {rows}
+
+    </table>
 
     </div>
 
@@ -81,38 +145,71 @@ def home():
     </html>
     """
 
-# API welcome route
-@app.route("/api")
-def api():
-    return jsonify({
-        "message": "Welcome to my Flask API!",
-        "student": "SHERENE BRITOS"
-    })
+@app.route("/add", methods=["POST"])
+def add():
 
-# About route
-@app.route("/about")
-def about():
-    return jsonify({
-        "project": "Flask API Deployment Activity",
-        "developer": "SHERENE BRITOS",
-        "status": "Running on Render"
-    })
+    sid = request.form["id"]
+    name = request.form["name"]
+    course = request.form["course"]
 
-# Hello route
-@app.route("/hello/<name>")
-def hello(name):
-    return jsonify({
-        "message": f"Hello {name}! Welcome to my API."
-    })
+    students[sid] = {
+        "name": name,
+        "course": course
+    }
 
-# Student info route
-@app.route("/student")
-def student():
-    return jsonify({
-        "name": "Sherene Britos",
-        "course": "Information Technology",
-        "activity": "Flask API Deployment"
-    })
+    return redirect("/")
+
+@app.route("/delete/<sid>")
+def delete(sid):
+
+    if sid in students:
+        del students[sid]
+
+    return redirect("/")
+
+@app.route("/edit/<sid>")
+def edit(sid):
+
+    if sid not in students:
+        return redirect("/")
+
+    student = students[sid]
+
+    return f"""
+    <h2>Edit Student</h2>
+
+    <form action="/update/{sid}" method="post">
+
+    Name <input name="name" value="{student['name']}"><br><br>
+    Course <input name="course" value="{student['course']}"><br><br>
+
+    <button type="submit">Update</button>
+
+    </form>
+
+    <br>
+    <a href="/">Back</a>
+    """
+
+@app.route("/update/<sid>", methods=["POST"])
+def update(sid):
+
+    students[sid]["name"] = request.form["name"]
+    students[sid]["course"] = request.form["course"]
+
+    return redirect("/")
+
+@app.route("/search")
+def search():
+
+    keyword = request.args.get("name","").lower()
+
+    results = {
+        sid:data for sid,data in students.items()
+        if keyword in data["name"].lower()
+    }
+
+    return results
 
 if __name__ == "__main__":
     app.run(debug=True)
